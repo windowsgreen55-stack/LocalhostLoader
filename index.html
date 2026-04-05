@@ -2,63 +2,56 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>ZIP Site Loader</title>
+  <title>ZIP Auto Loader</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    iframe { width: 100%; height: 80vh; border: 1px solid #ccc; margin-top: 10px; }
+    body { margin:0; font-family: Arial; background:#111; color:#fff; }
+    iframe { width:100%; height:100vh; border:none; }
+    #topbar { padding:10px; background:#222; }
   </style>
 </head>
 <body>
-  <h2>Carregar site (ZIP ou pasta)</h2>
 
-  <input type="file" id="zipInput" accept=".zip"><br><br>
-  <input type="file" id="folderInput" webkitdirectory multiple><br>
+<div id="topbar">
+  Carregando automaticamente: <b>w96.zip</b>
+</div>
 
-  <iframe id="viewer"></iframe>
+<iframe id="viewer"></iframe>
 
-  <script>
-    const viewer = document.getElementById('viewer');
+<script>
+const viewer = document.getElementById('viewer');
 
-    // ZIP handling
-    document.getElementById('zipInput').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+async function loadZip() {
+  try {
+    const res = await fetch('./w96.zip');
+    const blob = await res.blob();
 
-      const zip = await JSZip.loadAsync(file);
-      let indexFile = null;
+    const zip = await JSZip.loadAsync(blob);
 
-      zip.forEach((relativePath, zipEntry) => {
-        if (relativePath.toLowerCase().endsWith('index.html')) {
-          indexFile = zipEntry;
-        }
-      });
+    let indexFile = null;
 
-      if (!indexFile) {
-        alert('index.html não encontrado no ZIP');
-        return;
+    zip.forEach((path, file) => {
+      if (path.toLowerCase().endsWith('index.html')) {
+        indexFile = file;
       }
-
-      const content = await indexFile.async('text');
-      viewer.srcdoc = content;
     });
 
-    // Folder handling
-    document.getElementById('folderInput').addEventListener('change', (e) => {
-      const files = Array.from(e.target.files);
-      const indexFile = files.find(f => f.name.toLowerCase() === 'index.html');
+    if (!indexFile) {
+      document.body.innerHTML += '<p>index.html não encontrado no ZIP</p>';
+      return;
+    }
 
-      if (!indexFile) {
-        alert('index.html não encontrado na pasta');
-        return;
-      }
+    const content = await indexFile.async('text');
+    viewer.srcdoc = content;
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        viewer.srcdoc = reader.result;
-      };
-      reader.readAsText(indexFile);
-    });
-  </script>
+  } catch (err) {
+    document.body.innerHTML += '<p>Erro ao carregar w96.zip</p>';
+    console.error(err);
+  }
+}
+
+loadZip();
+</script>
+
 </body>
 </html>
