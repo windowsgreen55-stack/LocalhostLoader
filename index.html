@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>ZIP Site Loader</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    iframe { width: 100%; height: 80vh; border: 1px solid #ccc; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Carregar site (ZIP ou pasta)</h2>
+
+  <input type="file" id="zipInput" accept=".zip"><br><br>
+  <input type="file" id="folderInput" webkitdirectory multiple><br>
+
+  <iframe id="viewer"></iframe>
+
+  <script>
+    const viewer = document.getElementById('viewer');
+
+    // ZIP handling
+    document.getElementById('zipInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const zip = await JSZip.loadAsync(file);
+      let indexFile = null;
+
+      zip.forEach((relativePath, zipEntry) => {
+        if (relativePath.toLowerCase().endsWith('index.html')) {
+          indexFile = zipEntry;
+        }
+      });
+
+      if (!indexFile) {
+        alert('index.html não encontrado no ZIP');
+        return;
+      }
+
+      const content = await indexFile.async('text');
+      viewer.srcdoc = content;
+    });
+
+    // Folder handling
+    document.getElementById('folderInput').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      const indexFile = files.find(f => f.name.toLowerCase() === 'index.html');
+
+      if (!indexFile) {
+        alert('index.html não encontrado na pasta');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        viewer.srcdoc = reader.result;
+      };
+      reader.readAsText(indexFile);
+    });
+  </script>
+</body>
+</html>
